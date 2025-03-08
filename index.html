@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spanish Quiz</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #74ebd5, #acb6e5);
+      color: #333;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    h1 {
+      color: #fff;
+      text-align: center;
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+      width: 100%;
+    }
+    .tab {
+      background: #2c3e50;
+      color: white;
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .tab:hover,
+    .tab.active {
+      background: #1abc9c;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+      width: 80%;
+      max-width: 400px;
+      text-align: left;
+      margin-bottom: 20px;
+    }
+    input, button {
+      padding: 8px;
+      margin-top: 10px;
+      width: 100%;
+      display: block;
+      box-sizing: border-box;
+    }
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    #result {
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .correct { color: green; }
+    .incorrect { color: red; }
+    ul { list-style-type: none; padding: 0; }
+    li { padding: 5px; margin-bottom: 5px; }
+  </style>
+</head>
+<body>
+  <h1>Spanish to English Quiz</h1>
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('quizTab')">Quiz</div>
+    <div class="tab" onclick="showTab('addWordTab')">Add Words</div>
+  </div>
+
+  <!-- Quiz Tab -->
+  <div id="quizTab" class="container">
+    <!-- Settings Section -->
+    <div id="settings">
+      <h2>Quiz Settings</h2>
+      <label for="question-count">How many questions?</label>
+      <input type="number" id="question-count" min="1" max="50" value="10" />
+      <button onclick="startQuiz()">Start Quiz</button>
+    </div>
+    <!-- Quiz Section -->
+    <div id="quiz-section" style="display: none;">
+      <h2>Quiz</h2>
+      <p id="question-number"></p>
+      <p id="question"></p>
+      <input type="text" id="answer" placeholder="Enter English translation" />
+      <p id="result"></p>
+      <button onclick="nextQuestion()">Next</button>
+      <p>Score: <span id="score">0</span> / <span id="maxScore">0</span></p>
+    </div>
+    <!-- Summary Section -->
+    <div id="summary" style="display: none;">
+      <h2>Quiz Completed!</h2>
+      <p>Final Score: <span id="final-score"></span> points (Max: <span id="final-max"></span>)</p>
+      <ul id="answer-list"></ul>
+      <button onclick="restartQuiz()">Restart Quiz</button>
+    </div>
+  </div>
+
+  <!-- Add Words Tab -->
+  <div id="addWordTab" class="container" style="display: none;">
+    <h2>Add New Words</h2>
+    <label for="new-spanish">Spanish:</label>
+    <input type="text" id="new-spanish" placeholder="Enter Spanish word" />
+    <label for="new-english">English:</label>
+    <input type="text" id="new-english" placeholder="Enter English meaning" />
+    <button onclick="addWord()">Add Word</button>
+    <p id="add-word-result"></p>
+  </div>
+
+  <script>
+    // Full original word list (41 entries)
+    const defaultWords = [
+      { spanish: "aunque", english: "although" },
+      { spanish: "además", english: "what’s more, as well as" },
+      { spanish: "cuanto antes", english: "as soon as possible" },
+      { spanish: "tener prisa", english: "to be in a hurry" },
+      { spanish: "aún", english: "still" },
+      { spanish: "alguna vez", english: "ever" },
+      { spanish: "igual", english: "still" },
+      { spanish: "se dar cuenta", english: "to realize" },
+      { spanish: "la cancha", english: "the field" },
+      { spanish: "ser de pie", english: "to stand up" },
+      { spanish: "despedir", english: "to say goodbye" },
+      { spanish: "conseguir", english: "to get" },
+      { spanish: "tal vez", english: "maybe" },
+      { spanish: "entregar", english: "to deliver" },
+      { spanish: "a pesar de", english: "despite" },
+      { spanish: "para nada", english: "at all" },
+      { spanish: "en cuanto", english: "as far as ... is concerned" },
+      { spanish: "apenas", english: "as soon as" },
+      { spanish: "ni siquiera", english: "not even" },
+      { spanish: "ya mismo", english: "right now" },
+      { spanish: "por si acaso", english: "just in case" },
+      { spanish: "no tiene por qué", english: "don’t mention it" },
+      { spanish: "por anticipado", english: "in advance" },
+      { spanish: "no hay de qué", english: "not at all" },
+      { spanish: "hoy en día", english: "nowadays" },
+      { spanish: "siempre y cuando", english: "as long as" },
+      { spanish: "a fin de cuentas", english: "in the end" },
+      { spanish: "de hecho", english: "in fact" },
+      { spanish: "volviendo al tema", english: "anyway" },
+      { spanish: "enseguida", english: "right away" },
+      { spanish: "sin embargo", english: "however" },
+      { spanish: "por nada", english: "you are welcome" },
+      { spanish: "fue un gusto", english: "it was a pleasure" },
+      { spanish: "ya que", english: "because, since" },
+      { spanish: "y sobre todo", english: "and ... especially" },
+      { spanish: "aún así", english: "even so" },
+      { spanish: "sí o sí", english: "no matter what" },
+      { spanish: "estar a cargo", english: "to be in charge" },
+      { spanish: "resultó que", english: "it turned out that" },
+      { spanish: "hacer caso", english: "to listen to" },
+      { spanish: "en vez de", english: "instead of" }
+    ];
+
+    // Load any new words from localStorage (only words added beyond defaultWords)
+    let storedWords = JSON.parse(localStorage.getItem("wordList")) || [];
+    let words = [...defaultWords, ...storedWords];
+
+    let selectedWords = [];
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let totalQuestions = 10;
+    let answers = [];
+
+    // Helper: Filter duplicate Spanish words
+    function getUniqueWords(arr) {
+      const seen = {};
+      return arr.filter(item => {
+        if (seen[item.spanish]) {
+          return false;
+        } else {
+          seen[item.spanish] = true;
+          return true;
+        }
+      });
+    }
+
+    function startQuiz() {
+      let input = document.getElementById("question-count").value;
+      totalQuestions = input ? parseInt(input) : 10; // default to 10 if empty
+
+      // Get only unique words based on the Spanish term
+      let uniqueWords = getUniqueWords(words);
+
+      if (uniqueWords.length < totalQuestions) {
+        alert("Not enough unique words for this quiz. Please add more words!");
+        return;
+      }
+
+      selectedWords = [...uniqueWords].sort(() => Math.random() - 0.5).slice(0, totalQuestions);
+      // Set the max score (each question is worth 5 points)
+      document.getElementById("maxScore").innerText = totalQuestions * 5;
+      // Hide settings and show quiz section
+      document.getElementById("settings").style.display = "none";
+      document.getElementById("quiz-section").style.display = "block";
+      loadQuestion();
+    }
+
+    function loadQuestion() {
+      // Display current question number
+      document.getElementById("question-number").innerText = "Question " + (currentQuestionIndex + 1) + " of " + totalQuestions;
+      document.getElementById("question").innerText = `Translate: ${selectedWords[currentQuestionIndex].spanish}`;
+      document.getElementById("answer").value = "";
+      document.getElementById("result").innerText = "";
+    }
+
+    function nextQuestion() {
+      let userAnswer = document.getElementById("answer").value.trim().toLowerCase();
+      let correctAnswer = selectedWords[currentQuestionIndex].english.toLowerCase();
+
+      // Treat empty answer as wrong
+      if (userAnswer === correctAnswer) {
+        document.getElementById("result").innerHTML = "<span class='correct'>✅ Correct!</span>";
+        score += 5;
+        answers.push({
+          spanish: selectedWords[currentQuestionIndex].spanish,
+          userAnswer: userAnswer || "(No answer)",
+          correct: true,
+          correctAnswer: selectedWords[currentQuestionIndex].english
+        });
+      } else {
+        document.getElementById("result").innerHTML = `<span class='incorrect'>❌ Wrong! Correct answer: ${selectedWords[currentQuestionIndex].english}</span>`;
+        answers.push({
+          spanish: selectedWords[currentQuestionIndex].spanish,
+          userAnswer: userAnswer || "(No answer)",
+          correct: false,
+          correctAnswer: selectedWords[currentQuestionIndex].english
+        });
+      }
+      document.getElementById("score").innerText = score;
+
+      currentQuestionIndex++;
+      if (currentQuestionIndex < totalQuestions) {
+        setTimeout(loadQuestion, 1000);
+      } else {
+        setTimeout(showSummary, 1000);
+      }
+    }
+
+    function showSummary() {
+      document.getElementById("quiz-section").style.display = "none";
+      document.getElementById("summary").style.display = "block";
+      document.getElementById("final-score").innerText = score;
+      document.getElementById("final-max").innerText = totalQuestions * 5;
+
+      let answerList = document.getElementById("answer-list");
+      answerList.innerHTML = "";
+      answers.forEach(ans => {
+        let li = document.createElement("li");
+        if (ans.correct) {
+          li.innerHTML = `<span class="correct">${ans.spanish}: Your answer "${ans.userAnswer}" is correct.</span>`;
+        } else {
+          li.innerHTML = `<span class="incorrect">${ans.spanish}: Your answer "${ans.userAnswer}" is wrong. Correct answer: ${ans.correctAnswer}.</span>`;
+        }
+        answerList.appendChild(li);
+      });
+    }
+
+    function restartQuiz() {
+      location.reload();
+    }
+
+    function addWord() {
+      let newSpanish = document.getElementById("new-spanish").value.trim();
+      let newEnglish = document.getElementById("new-english").value.trim();
+
+      if (newSpanish && newEnglish) {
+        let newEntry = { spanish: newSpanish, english: newEnglish };
+        words.push(newEntry);
+        // Save only the words beyond the default list
+        let additionalWords = words.slice(defaultWords.length);
+        localStorage.setItem("wordList", JSON.stringify(additionalWords));
+        document.getElementById("add-word-result").innerText = "✅ Word added!";
+      } else {
+        document.getElementById("add-word-result").innerText = "❌ Please fill in both fields.";
+      }
+    }
+
+    function showTab(tabId) {
+      document.querySelectorAll('.container').forEach(div => (div.style.display = 'none'));
+      document.getElementById(tabId).style.display = "block";
+      // Reset tab highlighting
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove("active"));
+      if (tabId === "quizTab") {
+        document.querySelector(".tab:nth-child(1)").classList.add("active");
+      } else {
+        document.querySelector(".tab:nth-child(2)").classList.add("active");
+      }
+    }
+
+    // Initially show the quiz tab (with settings)
+    showTab('quizTab');
+  </script>
+</body>
+</html>
